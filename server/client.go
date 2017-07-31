@@ -88,7 +88,6 @@ func (c *Client) receive() {
 			}
 		}
 
-		fmt.Println(msg)
 		c.handleMessage(msg)
 	}
 }
@@ -109,6 +108,8 @@ func (c *Client) handleMessage(msg Message) {
 			"Response:", "not authorized]",
 		)
 	}
+
+	fmt.Println("Authorization Status: ", c.AuthState)
 }
 
 // NewClient ...
@@ -136,7 +137,7 @@ func NewClient(ws *websocket.Conn, ac chan AuthMessage, uc chan int, id int) *Cl
 		PROCESSING: {
 			ENCRYPT: func(msg Message) {
 				json.Unmarshal(msg.Public, &client.Public)
-				fmt.Println(client.Public, client.Private)
+				client.AuthState = ENCRYPTED
 			},
 		},
 		ENCRYPTED: {
