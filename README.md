@@ -21,7 +21,7 @@ go build whitearmy/usermanagement
 ### 4. Start the server
 Run following command in folder usermanagement
 ```
-go run server.go
+go run main.go
 ```
 
 ### 5. Start the Test Client
