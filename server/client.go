@@ -31,8 +31,8 @@ type (
 		Private    *rsa.PrivateKey
 		Public     *rsa.PublicKey
 		AuthState  int
-		AuthCH     *chan AuthMessage
-		Unregister *chan int
+		AuthCH     chan AuthMessage
+		Unregister chan int
 	}
 
 	// Message ..
@@ -81,7 +81,7 @@ func (c *Client) receive() {
 	defer func() {
 		c.Conn.Close()
 		fmt.Println("connection closed from client", c.ID)
-		*c.Unregister <- c.ID
+		c.Unregister <- c.ID
 	}()
 
 	for {
@@ -116,7 +116,7 @@ func (c *Client) handleMessage(msg Message) {
 }
 
 // NewClient ...
-func NewClient(ws *websocket.Conn, ac *chan AuthMessage, uc *chan int, id int) *Client {
+func NewClient(ws *websocket.Conn, ac chan AuthMessage, uc chan int, id int) *Client {
 	client := &Client{
 		ID:         id,
 		Conn:       ws,
@@ -131,7 +131,7 @@ func NewClient(ws *websocket.Conn, ac *chan AuthMessage, uc *chan int, id int) *
 	client.Access = map[int]map[string]func(Message){
 		UNUAUTHORIZED: {
 			AUTH: func(msg Message) {
-				*client.AuthCH <- AuthMessage{
+				client.AuthCH <- AuthMessage{
 					ClientID: client.ID,
 					Token:    msg.AuthData.Token,
 				}

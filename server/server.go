@@ -20,7 +20,7 @@ const (
 
 type (
 	// Server ...
-	Server struct {
+	Disposer struct {
 		Clients    map[int]*Client
 		AuthCH     chan AuthMessage
 		unregister chan int
@@ -34,17 +34,17 @@ type (
 	}
 )
 
-func (s *Server) register(c *Client) {
-	id := len(s.Clients)
-	s.Clients[id] = c
+func (d *Disposer) register(c *Client) {
+	id := len(d.Clients)
+	d.Clients[id] = c
 }
 
-func (s *Server) Unregister() {
+func (d *Disposer) Unregister() {
 	for {
 		select {
-		case id, ok := <-s.unregister:
+		case id, ok := <-d.unregister:
 			if ok {
-				delete(s.Clients, id)
+				delete(d.Clients, id)
 				fmt.Println("unregistered")
 			}
 		}
@@ -52,28 +52,28 @@ func (s *Server) Unregister() {
 }
 
 // Authorize ...
-func (s *Server) Authorize() {
+func (d *Disposer) Authorize() {
 	for {
 		select {
-		case authMSG, ok := <-s.AuthCH:
+		case authMSG, ok := <-d.AuthCH:
 			if !ok {
-				if authMSG.Token == s.Token {
-					s.initializeE2E(authMSG.ClientID)
+				if authMSG.Token == d.Token {
+					d.initializeE2E(authMSG.ClientID)
 				}
 			}
 		}
 	}
 }
 
-func (s *Server) initializeE2E(clientid int) {
-	s.Clients[clientid].AuthState = PROCESSING
+func (d *Disposer) initializeE2E(clientid int) {
+	d.Clients[clientid].AuthState = PROCESSING
 
-	key := s.generateKey()
-	s.Clients[clientid].Private = key
+	key := d.generateKey()
+	d.Clients[clientid].Private = key
 
 	msg, _ := json.Marshal(key.Public())
 
-	s.Clients[clientid].Send <- Message{
+	d.Clients[clientid].Send <- Message{
 		EncryptData: EncryptData{
 			Public: string(msg),
 		},
@@ -81,7 +81,7 @@ func (s *Server) initializeE2E(clientid int) {
 
 }
 
-func (s *Server) generateKey() *rsa.PrivateKey {
+func (d *Disposer) generateKey() *rsa.PrivateKey {
 	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return privKey
@@ -90,19 +90,19 @@ func (s *Server) generateKey() *rsa.PrivateKey {
 	return &rsa.PrivateKey{}
 }
 
-// Serve ...
-func (s *Server) Serve(ws *websocket.Conn) {
-	client := NewClient(ws, &s.AuthCH, &s.unregister, len(s.Clients))
+// Disposer ...
+func (d *Disposer) Serve(ws *websocket.Conn) {
+	client := NewClient(ws, d.AuthCH, d.unregister, len(d.Clients))
 
-	s.register(client)
+	d.register(client)
 
 	go client.send()
 	client.receive()
 }
 
-// NewServer ...
-func NewServer(token string) *Server {
-	return &Server{
+// NewDisposer ...
+func NewDisposer(token string) *Disposer {
+	return &Disposer{
 		Clients:    make(map[int]*Client, 0),
 		Token:      token,
 		AuthCH:     make(chan AuthMessage, 0),
