@@ -6,12 +6,15 @@ import (
 	"io"
 	"time"
 
+	"encoding/json"
 	"golang.org/x/net/websocket"
 )
 
 const (
 	// AUTH : message type for authorization
 	AUTH string = "AUTH"
+	// AUTH : message type for authorization
+	ENCRYPT string = "ENCRYPT"
 	// LOGIN : message type for login
 	LOGIN string = "LOGIN"
 	// SIGNUP : message type for signup
@@ -62,16 +65,9 @@ func (c *Client) send() {
 		c.Conn.Close()
 	}()
 
-	for {
-		select {
-		case msg, ok := <-c.Send:
-			if ok {
-				if err := websocket.JSON.Send(c.Conn, msg); err != nil {
-					fmt.Println("cant send")
-				}
-			}
-		default:
-			//	fmt.Println("waiting for msg...")
+	for msg := range c.Send {
+		if err := websocket.JSON.Send(c.Conn, msg); err != nil {
+			fmt.Println("cant send")
 		}
 	}
 }
@@ -137,7 +133,12 @@ func NewClient(ws *websocket.Conn, ac chan AuthMessage, uc chan int, id int) *Cl
 				}
 			},
 		},
-		PROCESSING: {},
+		PROCESSING: {
+			ENCRYPT: func(msg Message) {
+				json.Unmarshal(msg.Public, &client.Public)
+				fmt.Println(client.Public, client.Private)
+			},
+		},
 		ENCRYPTED: {
 			LOGIN:  client.Login,
 			SIGNUP: client.SignUp,

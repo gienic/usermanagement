@@ -60,12 +60,11 @@ func (d *Disposer) initializeE2E(clientid int) {
 
 	key := d.generateKey()
 	d.Clients[clientid].Private = key
-
 	msg, _ := json.Marshal(key.Public())
 
 	d.Clients[clientid].Send <- Message{
 		EncryptData: EncryptData{
-			Public: string(msg),
+			Public: msg,
 		},
 	}
 
@@ -73,7 +72,7 @@ func (d *Disposer) initializeE2E(clientid int) {
 
 func (d *Disposer) generateKey() *rsa.PrivateKey {
 	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
+	if err == nil {
 		return privKey
 	}
 

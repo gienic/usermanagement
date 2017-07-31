@@ -3,7 +3,7 @@ package server
 type (
 	// EncryptData : general struct for end-to-end encryption
 	EncryptData struct {
-		Public string
+		Public []byte
 	}
 
 	// AuthData : general authentication data struct

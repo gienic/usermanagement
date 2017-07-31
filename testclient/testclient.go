@@ -4,15 +4,28 @@ import (
 	"fmt"
 	"io"
 
+	"crypto/rand"
+	"crypto/rsa"
+	"encoding/json"
 	"golang.org/x/net/websocket"
 )
 
 type Message struct {
-	Token   string
-	Type    string
-	Message string
-	Error   string
+	Type string
+	AuthData
+	EncryptData
+	Error string
 }
+
+type EncryptData struct {
+	Public []byte
+}
+
+type AuthData struct {
+	Token string
+}
+
+var public rsa.PublicKey
 
 func main() {
 
@@ -22,14 +35,32 @@ func main() {
 
 	ch := make(chan bool)
 
+	go read(ws)
+
 	err := websocket.JSON.Send(ws, Message{
-		Message: "hallo",
-		Type:    "LOGIN",
+		Type: "AUTH",
+		AuthData: AuthData{
+			Token: "12345678",
+		},
 	})
 	if err != nil {
 		fmt.Println(err)
 	}
-	go read(ws)
+
+	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
+
+	pk, _ := json.Marshal(privKey.PublicKey)
+
+	err = websocket.JSON.Send(ws, Message{
+		Type: "ENCRYPT",
+		EncryptData: EncryptData{
+			Public: pk,
+		},
+	})
+
+	if err != nil {
+		fmt.Println(err)
+	}
 
 	<-ch
 
@@ -49,6 +80,6 @@ func read(ws *websocket.Conn) {
 			return
 		}
 
-		fmt.Println(message)
+		json.Unmarshal(message.Public, public)
 	}
 }
