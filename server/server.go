@@ -19,7 +19,7 @@ const (
 )
 
 type (
-	// Server ...
+	// Disposer ...
 	Disposer struct {
 		Clients    map[int]*Client
 		AuthCH     chan AuthMessage
@@ -40,27 +40,17 @@ func (d *Disposer) register(c *Client) {
 }
 
 func (d *Disposer) Unregister() {
-	for {
-		select {
-		case id, ok := <-d.unregister:
-			if ok {
-				delete(d.Clients, id)
-				fmt.Println("unregistered")
-			}
-		}
+	for id := range d.unregister {
+		delete(d.Clients, id)
+		fmt.Println("unregistered")
 	}
 }
 
 // Authorize ...
 func (d *Disposer) Authorize() {
-	for {
-		select {
-		case authMSG, ok := <-d.AuthCH:
-			if !ok {
-				if authMSG.Token == d.Token {
-					d.initializeE2E(authMSG.ClientID)
-				}
-			}
+	for authMSG := range d.AuthCH {
+		if authMSG.Token == d.Token {
+			d.initializeE2E(authMSG.ClientID)
 		}
 	}
 }
@@ -90,7 +80,7 @@ func (d *Disposer) generateKey() *rsa.PrivateKey {
 	return &rsa.PrivateKey{}
 }
 
-// Disposer ...
+// Serve ...
 func (d *Disposer) Serve(ws *websocket.Conn) {
 	client := NewClient(ws, d.AuthCH, d.unregister, len(d.Clients))
 
