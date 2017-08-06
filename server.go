@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/whitearmy/user/server"
+	"github.com/whitearmy/usermanagement/server"
 	"golang.org/x/net/websocket"
 )
 
