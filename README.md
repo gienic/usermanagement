@@ -15,7 +15,7 @@ go get github.com/whitearmy/usermanagement
 
 ### 3. Build the package
 ```
-go build whitearmy/usermanagement
+go build whitearmy/usermanagement or go build .
 ```
 
 ### 4. Start the server
